@@ -2,5 +2,5 @@ services:
   - type: web
     name: retina-backend
     env: python
-    buildCommand: ""
     startCommand: python app.py
+
