@@ -4,12 +4,9 @@ from PIL import Image
 import numpy as np
 import os
 
-port = int(os.environ.get("PORT", 10000))
-app.run(host="0.0.0.0", port=port)
-
-
 from prediction import load_model, predict  # same as Streamlit
 
+# Create Flask app
 app = Flask(__name__)
 CORS(app)
 
@@ -17,16 +14,18 @@ CORS(app)
 model = load_model()
 
 # Define categories
-categories = ['Central Serous Chorioretinopathy_Color Fundus',
-              'Diabetic Retinopathy',
-              'Disc Edema',
-              'Glaucoma',
-              'Healthy',
-              'Macular Scar',
-              'Myopia',
-              'Pterygium',
-              'Retinal Detachment',
-              'Retinitis Pigmentosa']
+categories = [
+    'Central Serous Chorioretinopathy_Color Fundus',
+    'Diabetic Retinopathy',
+    'Disc Edema',
+    'Glaucoma',
+    'Healthy',
+    'Macular Scar',
+    'Myopia',
+    'Pterygium',
+    'Retinal Detachment',
+    'Retinitis Pigmentosa'
+]
 
 @app.route('/predict', methods=['POST'])
 def classify_retina():
@@ -37,26 +36,27 @@ def classify_retina():
     try:
         # Read image and convert to RGB
         image = Image.open(image_file)
-        if image.mode == 'RGBA':
+        if image.mode != 'RGB':
             image = image.convert('RGB')
 
         # Run prediction
-        probabilities = predict(model, image)  # returns NumPy array
+        probabilities = predict(model, image)  # NumPy array
         max_index = int(np.argmax(probabilities))
-        max_category = categories[max_index]
-        max_confidence = float(probabilities[max_index])
-
-        # Convert full probability distribution to JSON
-        prob_dict = {categories[i]: float(probabilities[i]) for i in range(len(categories))}
 
         return jsonify({
-            'prediction': max_category,
-            'confidence': max_confidence,
-            'probabilities': prob_dict
+            'prediction': categories[max_index],
+            'confidence': float(probabilities[max_index]),
+            'probabilities': {
+                categories[i]: float(probabilities[i])
+                for i in range(len(categories))
+            }
         })
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+
+# IMPORTANT: Render needs this
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
