@@ -2,8 +2,6 @@ flask
 flask-cors
 pillow
 numpy==2.1.2
-
-torch==2.2.2
+torch==2.10.0
 torchvision==0.17.2
-
 matplotlib==3.10.0
