@@ -3,7 +3,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.transforms as transforms
 import numpy as np
-import streamlit as st
 from PIL import Image
 
 # -----------------------------
@@ -90,57 +89,18 @@ def preprocess_image(image):
     return input_batch
 
 def load_model():
-    try:
-        model = ResNet9(3, 10)  # ✅ 10 classes for retina diseases
-        if torch.cuda.is_available():
-            model = model.to(torch.device("cuda"), non_blocking=True)
-        else:
-            model = model.to(torch.device("cpu"), non_blocking=True)
-        model.load_state_dict(torch.load('final.pth', map_location=torch.device('cpu')))
-        model.eval()
-        return model
-    except Exception as e:
-        st.error(f"Error loading model: {e}")
-        return None
+    model = ResNet9(3, 10)  # ✅ 10 classes for retina diseases
+    if torch.cuda.is_available():
+        model = model.to(torch.device("cuda"), non_blocking=True)
+    else:
+        model = model.to(torch.device("cpu"), non_blocking=True)
+    model.load_state_dict(torch.load('final.pth', map_location=torch.device('cpu')))
+    model.eval()
+    return model
 
 def predict(model, image):
-    try:
-        input_batch = preprocess_image(image)
-        with torch.no_grad():
-            output = model(input_batch)
-        probabilities = torch.nn.functional.softmax(output[0], dim=0)
-        return probabilities.cpu().numpy()
-    except Exception as e:
-        st.error(f"Error during prediction: {e}")
-        return np.ones(10) / 10
-
-# -----------------------------
-# Streamlit UI
-# -----------------------------
-st.title("Retina Image Classifier")
-
-uploaded_file = st.file_uploader("Upload a retina image", type=["jpg", "jpeg", "png"])
-model = load_model()
-
-if uploaded_file is not None and model is not None:
-    image = Image.open(uploaded_file).convert("RGB")
-    st.image(image, caption="Uploaded Image", use_column_width=True)
-
-    probabilities = predict(model, image)
-    labels = [
-        "Central Serous Chorioretinopathy_Color Fundus",
-        "Diabetic Retinopathy",
-        "Disc Edema",
-        "Glaucoma",
-        "Healthy",
-        "Macular Scar",
-        "Myopia",
-        "Pterygium",
-        "Retinal Detachment",
-        "Retinitis Pigmentosa"
-    ]
-    predicted_index = np.argmax(probabilities)
-    confidence = probabilities[predicted_index] * 100
-
-    st.write(f"Prediction: **{labels[predicted_index]}**")
-    st.write(f"Confidence: **{confidence:.2f}%**")
+    input_batch = preprocess_image(image)
+    with torch.no_grad():
+        output = model(input_batch)
+    probabilities = torch.nn.functional.softmax(output[0], dim=0)
+    return probabilities.cpu().numpy()
